@@ -1,21 +1,18 @@
 {
   "name": "cobol-api",
-  "version": "1.0.0",
-  "description": "",
+  "version": "2.0.0",
+  "description": "COBOL Application Server - REST/WebSocket API para executaveis GNU COBOL",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "build": "make all"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["cobol", "api", "gnucobol"],
   "license": "ISC",
   "dependencies": {
-    "express": "^5.2.1"
-  },
-  "devDependencies": {
-    "@types/express": "^5.0.6",
-    "@types/node": "^25.9.1",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^6.0.3"
+    "express": "^5.2.1",
+    "multer": "^1.4.5-lts.1",
+    "ws": "^8.18.0"
   }
 }

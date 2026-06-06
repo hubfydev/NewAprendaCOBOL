@@ -1,0 +1,33 @@
+{
+  "hello": {
+    "exec": "./bin/hello",
+    "type": "one-shot",
+    "description": "Hello World — sem entrada, retorna mensagem de boas-vindas",
+    "maxConcurrent": 20,
+    "queueMax": 100,
+    "queueTimeout": 10000,
+    "timeout": 5000,
+    "input": [],
+    "output": [
+      { "name": "message", "pic": "X(50)" }
+    ]
+  },
+  "calc": {
+    "exec": "./bin/calc",
+    "type": "one-shot",
+    "description": "Calculadora COBOL — operações ADD, SUB, MUL, DIV com dois números",
+    "maxConcurrent": 10,
+    "queueMax": 50,
+    "queueTimeout": 30000,
+    "timeout": 5000,
+    "input": [
+      { "name": "a",  "pic": "9(10)V99" },
+      { "name": "b",  "pic": "9(10)V99" },
+      { "name": "op", "pic": "X(10)", "enum": ["ADD", "SUB", "MUL", "DIV"] }
+    ],
+    "output": [
+      { "name": "result", "pic": "9(12)V99" },
+      { "name": "status", "pic": "X(10)"    }
+    ]
+  }
+}

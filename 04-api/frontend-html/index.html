@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<!--
+  Calculadora COBOL — Interface HTML pura
+  Chama a API via fetch() (JavaScript) sem recarregar a página.
+  Nenhum servidor necessário além da API em localhost:3000.
+-->
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculadora COBOL — HTML</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0f1923;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: #1a2535;
+      border: 1px solid #2a3a50;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 460px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .card-header {
+      background: #0d1f33;
+      padding: 24px 28px 20px;
+      border-bottom: 1px solid #2a3a50;
+    }
+
+    .badge-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    .badge-cobol { background: #1e4d2b; color: #4ade80; border: 1px solid #166534; }
+    .badge-html  { background: #4a1d0a; color: #fb923c; border: 1px solid #c2410c; }
+    .badge-js    { background: #3b2700; color: #fbbf24; border: 1px solid #92400e; }
+    .badge-api   { background: #7c2d12; color: #fb923c; border: 1px solid #c2410c; }
+
+    .card-title    { font-size: 22px; font-weight: 700; color: #f1f5f9; }
+    .card-subtitle { font-size: 12px; color: #64748b; margin-top: 4px; }
+
+    .card-body { padding: 28px; }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+
+    label.field-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input[type="number"] {
+      background: #0f1923;
+      border: 1px solid #2a3a50;
+      border-radius: 8px;
+      color: #f1f5f9;
+      font-size: 18px;
+      padding: 12px 14px;
+      outline: none;
+      transition: border-color 0.15s;
+      width: 100%;
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    input[type="number"]:focus { border-color: #3b82f6; }
+
+    .op-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+
+    .op-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .op-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px;
+      background: #0f1923;
+      border: 1px solid #2a3a50;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+    }
+
+    .op-btn.active {
+      background: #1e3a5f;
+      border-color: #3b82f6;
+    }
+
+    .op-btn.active .op-symbol,
+    .op-btn.active .op-name { color: #60a5fa; }
+
+    .op-btn:hover:not(.active) {
+      border-color: #3b82f6;
+      background: #1a2f4a;
+    }
+
+    .op-symbol { font-size: 20px; font-weight: 700; color: #64748b; }
+    .op-name   { font-size: 13px; font-weight: 600; color: #94a3b8; }
+
+    .btn-submit {
+      width: 100%;
+      padding: 14px;
+      background: #2563eb;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+      letter-spacing: 0.3px;
+      position: relative;
+    }
+
+    .btn-submit:hover:not(:disabled) { background: #1d4ed8; }
+    .btn-submit:active { background: #1e40af; }
+    .btn-submit:disabled { background: #1e3a5f; cursor: not-allowed; }
+
+    .spinner {
+      display: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .result-box {
+      margin-top: 20px;
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      animation: fadeIn 0.25s ease;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
+
+    .result-box.success { background: #0a2318; border: 1px solid #166534; }
+    .result-box.error   { background: #2d0f0f; border: 1px solid #7f1d1d; }
+    .result-box.hidden  { display: none; }
+
+    .result-expression { font-size: 13px; color: #64748b; margin-bottom: 6px; font-family: monospace; }
+    .result-value {
+      font-size: 36px;
+      font-weight: 800;
+      color: #4ade80;
+      font-family: 'Courier New', monospace;
+    }
+    .result-value.neg { color: #fb923c; }
+
+    .result-meta { font-size: 11px; color: #374151; margin-top: 10px; font-family: monospace; }
+    .result-meta span { color: #4b5563; }
+
+    .error-msg  { color: #f87171; font-size: 14px; font-weight: 500; }
+    .div0-msg   { color: #fb923c; font-size: 22px; font-weight: 700; }
+    .neg-hint   { font-size: 11px; color: #fb923c; margin-top: 4px; }
+
+    .card-footer {
+      padding: 14px 28px;
+      background: #0d1f33;
+      border-top: 1px solid #1e2d3d;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #374151;
+      font-family: monospace;
+    }
+
+    .flow { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+    .flow-item { color: #4b5563; }
+    .flow-sep  { color: #1e3a5f; }
+  </style>
+</head>
+<body>
+<div class="card">
+
+  <div class="card-header">
+    <div class="badge-row">
+      <span class="badge badge-html">HTML</span>
+      <span class="badge badge-js">JS fetch</span>
+      <span class="badge badge-api">REST API</span>
+      <span class="badge badge-cobol">GNU COBOL</span>
+    </div>
+    <div class="card-title">Calculadora COBOL</div>
+    <div class="card-subtitle">Interface HTML + fetch() → API Node.js → calc.cob</div>
+  </div>
+
+  <div class="card-body">
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="field-label" for="num1">Número 1</label>
+        <input type="number" id="num1" step="any" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="field-label" for="num2">Número 2</label>
+        <input type="number" id="num2" step="any" placeholder="0">
+      </div>
+    </div>
+
+    <div class="op-label">Operação</div>
+    <div class="op-grid" id="opGrid">
+      <div class="op-btn active" data-op="ADD">
+        <span class="op-symbol">+</span>
+        <span class="op-name">Somar</span>
+      </div>
+      <div class="op-btn" data-op="SUB">
+        <span class="op-symbol">−</span>
+        <span class="op-name">Subtrair</span>
+      </div>
+      <div class="op-btn" data-op="MUL">
+        <span class="op-symbol">×</span>
+        <span class="op-name">Multiplicar</span>
+      </div>
+      <div class="op-btn" data-op="DIV">
+        <span class="op-symbol">÷</span>
+        <span class="op-name">Dividir</span>
+      </div>
+    </div>
+
+    <button class="btn-submit" id="btnCalc">
+      <span id="btnText">Executar Cálculo</span>
+      <div class="spinner" id="spinner"></div>
+    </button>
+
+    <div class="result-box hidden" id="resultBox"></div>
+
+  </div>
+
+  <div class="card-footer">
+    <div class="flow">
+      <span class="flow-item">fetch()</span>
+      <span class="flow-sep"> → </span>
+      <span class="flow-item">POST /api/run/calc</span>
+      <span class="flow-sep"> → </span>
+      <span class="flow-item">calc.cob</span>
+      <span class="flow-sep"> → </span>
+      <span class="flow-item">stdout</span>
+      <span class="flow-sep"> → </span>
+      <span class="flow-item">JSON</span>
+    </div>
+    <span style="color:#1e3a5f">sem servidor</span>
+  </div>
+
+</div>
+
+<script>
+const API_URL = 'http://localhost:3000/api/run/calc'
+
+const opSymbols = { ADD: '+', SUB: '−', MUL: '×', DIV: '÷' }
+let selectedOp = 'ADD'
+
+// Seleção de operação
+document.getElementById('opGrid').addEventListener('click', e => {
+  const btn = e.target.closest('.op-btn')
+  if (!btn) return
+  document.querySelectorAll('.op-btn').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  selectedOp = btn.dataset.op
+})
+
+// Submissão
+document.getElementById('btnCalc').addEventListener('click', async () => {
+  const num1 = parseFloat(document.getElementById('num1').value)
+  const num2 = parseFloat(document.getElementById('num2').value)
+
+  if (isNaN(num1) || isNaN(num2)) {
+    showError('Preencha os dois campos com números válidos.')
+    return
+  }
+
+  setLoading(true)
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ a: num1, b: num2, op: selectedOp })
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      let msg = data.error || 'Erro desconhecido.'
+      if (data.details && data.details.length) {
+        msg += ' (' + data.details.map(d => d.message).join('; ') + ')'
+      }
+      showError(msg)
+      return
+    }
+
+    let valor = data.result ?? 0
+    let status = data.status ?? 'OK'
+
+    // Trata resultado negativo
+    if (status === 'NEGATIVE') {
+      valor = -valor
+      status = 'OK'
+    }
+
+    showResult({
+      valor,
+      status,
+      durationMs: data._meta?.durationMs ?? 0,
+      a: num1,
+      b: num2,
+      op: selectedOp
+    })
+
+  } catch (err) {
+    showError('Não foi possível conectar à API COBOL. Verifique se o servidor está rodando em localhost:3000.')
+  } finally {
+    setLoading(false)
+  }
+})
+
+// Permitir Enter nos inputs
+document.querySelectorAll('input[type="number"]').forEach(inp => {
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('btnCalc').click()
+  })
+})
+
+function setLoading(on) {
+  const btn  = document.getElementById('btnCalc')
+  const text = document.getElementById('btnText')
+  const spin = document.getElementById('spinner')
+  btn.disabled  = on
+  text.style.display = on ? 'none' : 'block'
+  spin.style.display = on ? 'block' : 'none'
+}
+
+function showError(msg) {
+  const box = document.getElementById('resultBox')
+  box.className = 'result-box error'
+  box.innerHTML = `<div class="error-msg">${escHtml(msg)}</div>`
+}
+
+function showResult({ valor, status, durationMs, a, b, op }) {
+  const box  = document.getElementById('resultBox')
+  const sym  = opSymbols[op]
+  const expr = `${fmt(a)} ${sym} ${fmt(b)}`
+
+  box.className = 'result-box success'
+
+  if (status === 'DIV0') {
+    box.innerHTML = `
+      <div class="result-expression">${escHtml(expr)}</div>
+      <div class="div0-msg">Divisão por zero</div>`
+    return
+  }
+
+  if (status === 'ERR') {
+    box.className = 'result-box error'
+    box.innerHTML = `<div class="error-msg">Operação inválida retornada pelo COBOL</div>`
+    return
+  }
+
+  const isNeg = valor < 0
+  box.innerHTML = `
+    <div class="result-expression">${escHtml(expr)} =</div>
+    <div class="result-value ${isNeg ? 'neg' : ''}">${fmt(valor)}</div>
+    ${isNeg ? '<div class="neg-hint">resultado negativo</div>' : ''}
+    <div class="result-meta">
+      COBOL exit=0 &nbsp;|&nbsp;
+      <span>exec ${durationMs}ms</span> &nbsp;|&nbsp;
+      status: ${escHtml(status)}
+    </div>`
+}
+
+function fmt(n) {
+  return new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(n)
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+</script>
+</body>
+</html>
