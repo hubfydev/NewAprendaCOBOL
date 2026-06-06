@@ -1,0 +1,169 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. COBDB2T13.
+
+       AUTHOR. Aprenda COBOL.
+       DATE-WRITTEN. 2026-05-31.
+
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+
+           EXEC SQL INCLUDE SQLCA END-EXEC.
+
+           EXEC SQL BEGIN DECLARE SECTION END-EXEC.
+
+       01 HV-ID                  PIC S9(9) COMP-5.
+       01 HV-NOME                PIC X(100).
+       01 HV-EMAIL               PIC X(100).
+
+           EXEC SQL END DECLARE SECTION END-EXEC.
+
+       01 WS-SQLCODE             PIC S9(9) COMP-5 VALUE 0.
+       01 WS-NOME-AUX            PIC X(30).
+       01 WS-SOBRENOME-AUX       PIC X(30).
+
+       01 WS-QTD-ALUNOS          PIC 9(03) VALUE 0.
+       01 WS-I                   PIC 9(03) VALUE 0.
+
+       01 WS-ALUNOS.
+          05 WS-ALUNO OCCURS 100 TIMES.
+             10 WS-ALUNO-ID         PIC 9(09).
+             10 WS-ALUNO-NOME       PIC X(18).
+             10 WS-ALUNO-SOBRENOME  PIC X(28).
+             10 WS-ALUNO-EMAIL      PIC X(60).
+
+       01 WS-LINHA-IMPRESSAO.
+          05 WS-IMP-NOME        PIC X(18).
+          05 WS-IMP-SOBRENOME   PIC X(28).
+          05 WS-IMP-EMAIL       PIC X(60).
+
+       PROCEDURE DIVISION.
+
+       MAIN-PROCEDURE.
+
+           EXEC SQL
+               CONNECT TO COBOLDB USER db2inst1 USING AprendaCobol2026
+           END-EXEC.
+
+           MOVE SQLCODE TO WS-SQLCODE
+
+           IF WS-SQLCODE NOT = 0
+               DISPLAY "ERRO AO CONECTAR NO DB2. SQLCODE: "
+                       WS-SQLCODE
+               STOP RUN
+           END-IF
+
+           EXEC SQL
+               DECLARE C1 CURSOR FOR
+                   SELECT ID, NOME, EMAIL
+                     FROM ALUNOS
+                    ORDER BY ID
+           END-EXEC.
+
+           EXEC SQL
+               OPEN C1
+           END-EXEC.
+
+           MOVE SQLCODE TO WS-SQLCODE
+
+           IF WS-SQLCODE NOT = 0
+               DISPLAY "ERRO AO ABRIR CURSOR. SQLCODE: "
+                       WS-SQLCODE
+               PERFORM DISCONNECT-DB
+               STOP RUN
+           END-IF
+
+           PERFORM FETCH-ALUNOS
+
+           EXEC SQL
+               CLOSE C1
+           END-EXEC.
+
+           PERFORM PRINT-REPORT
+           PERFORM DISCONNECT-DB
+
+           STOP RUN.
+
+       FETCH-ALUNOS.
+
+           PERFORM UNTIL WS-SQLCODE = 100
+
+               EXEC SQL
+                   FETCH C1
+                    INTO :HV-ID,
+                         :HV-NOME,
+                         :HV-EMAIL
+               END-EXEC
+
+               MOVE SQLCODE TO WS-SQLCODE
+
+               IF WS-SQLCODE = 0
+                   PERFORM ADD-ALUNO
+               ELSE
+                   IF WS-SQLCODE NOT = 100
+                       DISPLAY "ERRO NO FETCH. SQLCODE: "
+                               WS-SQLCODE
+                       PERFORM DISCONNECT-DB
+                       STOP RUN
+                   END-IF
+               END-IF
+
+           END-PERFORM.
+
+       ADD-ALUNO.
+
+           ADD 1 TO WS-QTD-ALUNOS
+
+           MOVE SPACES TO WS-NOME-AUX
+           MOVE SPACES TO WS-SOBRENOME-AUX
+
+           UNSTRING FUNCTION TRIM(HV-NOME)
+               DELIMITED BY SPACE
+               INTO WS-NOME-AUX
+                    WS-SOBRENOME-AUX
+           END-UNSTRING
+
+           MOVE HV-ID
+               TO WS-ALUNO-ID(WS-QTD-ALUNOS)
+
+           MOVE FUNCTION TRIM(WS-NOME-AUX)
+               TO WS-ALUNO-NOME(WS-QTD-ALUNOS)
+
+           MOVE FUNCTION TRIM(WS-SOBRENOME-AUX)
+               TO WS-ALUNO-SOBRENOME(WS-QTD-ALUNOS)
+
+           MOVE FUNCTION TRIM(HV-EMAIL)
+               TO WS-ALUNO-EMAIL(WS-QTD-ALUNOS).
+
+       PRINT-REPORT.
+
+           DISPLAY "===================================="
+           DISPLAY "****** APRENDA COBOL - LISTAGEM DE ALUNOS ******"
+           DISPLAY "===================================="
+           DISPLAY "NOME           SOBRENOME             EMAIL"
+
+           PERFORM VARYING WS-I FROM 1 BY 1
+               UNTIL WS-I > WS-QTD-ALUNOS
+
+               MOVE SPACES TO WS-LINHA-IMPRESSAO
+
+               MOVE WS-ALUNO-NOME(WS-I)
+                   TO WS-IMP-NOME
+
+               MOVE WS-ALUNO-SOBRENOME(WS-I)
+                   TO WS-IMP-SOBRENOME
+
+               MOVE WS-ALUNO-EMAIL(WS-I)
+                   TO WS-IMP-EMAIL
+
+               DISPLAY FUNCTION TRIM(WS-LINHA-IMPRESSAO TRAILING)
+
+           END-PERFORM
+
+           DISPLAY "===================================="
+           DISPLAY "********* FIM DO RELATORIO DE ALUNOS **************"
+           DISPLAY "====================================".
+       DISCONNECT-DB.
+
+           EXEC SQL
+               CONNECT RESET
+           END-EXEC.
