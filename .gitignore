@@ -1,0 +1,18 @@
+# Node.js
+node_modules/
+
+# GnuCOBOL binários compilados (sem extensão)
+03-db2/COBDB2T1
+03-db2/COBDB2T12
+03-db2/COBDB2T13
+
+# Arquivos gerados pelo db2 prep (precompilador DB2)
+03-db2/*.cbl
+!03-db2/sqlca.cbl
+03-db2/*.bnd
+
+# Arquivos objeto C
+*.o
+
+# Claude Code configurações locais
+.claude/
